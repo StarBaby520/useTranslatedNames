@@ -12,8 +12,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
-import java.util.concurrent.CompletableFuture;
-
 import static aplini.usetranslatednames.UseTranslatedNames.*;
 
 public class onPlayerChat implements Listener {
@@ -26,32 +24,40 @@ public class onPlayerChat implements Listener {
         // 取消发送消息
         event.setCancelled(true);
 
-        CompletableFuture.runAsync(() -> {
+        Player player = event.getPlayer();
+        String format = event.getFormat();
+        String message = event.getMessage();
 
-            Player player = event.getPlayer();
-            // 获取已格式化的消息
-            String msg = String.format(event.getFormat(), player.getName(), event.getMessage());
+        Bukkit.getGlobalRegionScheduler().execute(plugin, () -> {
+            String msg = String.format(format, player.getName(), message);
 
             if(_debug >= 1){
                 plugin.getLogger().info("");
                 plugin.getLogger().info("");
-                plugin.getLogger().info("[DEBUG] [PlayerChat] [Player: "+ event.getPlayer().getName() +
+                plugin.getLogger().info("[DEBUG] [PlayerChat] [Player: "+ player.getName() +
                         ", Lang: "+ player.getLocale() +"] [Length: "+ msg.length() +"], [MODE: "+ mode.toString() +"]");
                 if(_debug >= 2){
-                    plugin.getLogger().info("  - [FORMAT]: "+ event.getFormat());
-                    plugin.getLogger().info("  - [MSG]: "+ event.getMessage());
+                    plugin.getLogger().info("  - [FORMAT]: "+ format);
+                    plugin.getLogger().info("  - [MSG]: "+ message);
                     plugin.getLogger().info("  - [GET]: "+ msg);
                 }
             }
             Bukkit.getConsoleSender().sendMessage(msg);
             switch(mode){
-                case Convert -> Bukkit.spigot().broadcast(new TextComponent(msg));
+                case Convert -> {
+                    TextComponent component = new TextComponent(msg);
+                    for(Player li : Bukkit.getOnlinePlayers()){
+                        Player target = li;
+                        target.getScheduler().run(plugin, t -> target.spigot().sendMessage(component), null);
+                    }
+                }
                 case ConvertBypass -> {
                     // 静默发送消息给每个玩家
                     PacketContainer chatPacket = protocolManager.createPacket(PacketType.Play.Server.SYSTEM_CHAT);
                     chatPacket.getChatComponents().write(0, WrappedChatComponent.fromText(msg));
                     for(Player li : Bukkit.getOnlinePlayers()){
-                        protocolManager.sendServerPacket(li, chatPacket, false);
+                        Player target = li;
+                        target.getScheduler().run(plugin, t -> protocolManager.sendServerPacket(target, chatPacket, false), null);
                     }
                 }
             }

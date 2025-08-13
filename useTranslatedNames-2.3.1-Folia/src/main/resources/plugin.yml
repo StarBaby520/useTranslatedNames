@@ -6,7 +6,7 @@ folia-supported: true
 prefix: UTN
 author: ApliNi
 
-softdepend:
+depend:
   - ProtocolLib
 
 commands:
