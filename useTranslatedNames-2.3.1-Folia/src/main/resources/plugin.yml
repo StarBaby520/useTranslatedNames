@@ -1,0 +1,15 @@
+name: UseTranslatedNames
+version: '${project.version}'
+main: aplini.usetranslatednames.UseTranslatedNames
+api-version: 1.19
+folia-supported: true
+prefix: UTN
+author: ApliNi
+
+softdepend:
+  - ProtocolLib
+
+commands:
+  utn:
+    description: UseTranslatedNames 插件的主命令
+    usage: /<command>
